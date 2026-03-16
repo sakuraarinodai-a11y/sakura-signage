@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+
+/* ── 雨 ─────────────────────────────── */
+@keyframes rain-fall {
+  0%   { transform: translateY(-120px) rotate(15deg); opacity: 0; }
+  5%   { opacity: 0.65; }
+  95%  { opacity: 0.65; }
+  100% { transform: translateY(110vh) rotate(15deg); opacity: 0; }
+}
+/* ── 雪 ─────────────────────────────── */
+@keyframes snow-drift {
+  0%   { transform: translateY(-20px) translateX(0px); opacity: 0; }
+  8%   { opacity: 0.9; }
+  45%  { transform: translateY(45vh) translateX(25px); }
+  55%  { transform: translateY(55vh) translateX(-10px); }
+  92%  { opacity: 0.9; }
+  100% { transform: translateY(108vh) translateX(50px); opacity: 0; }
+}
+/* ── 陽炎（猛暑） ─────────────────── */
+@keyframes heat-rise {
+  0%   { transform: translateY(0) scaleX(1); opacity: 0.5; }
+  50%  { transform: translateY(-40px) scaleX(1.2); opacity: 0.2; }
+  100% { transform: translateY(-80px) scaleX(0.8); opacity: 0; }
+}
+/* ── 星（晴れ） ──────────────────── */
+@keyframes sparkle {
+  0%,100% { transform: scale(0) rotate(0deg); opacity: 0; }
+  50%     { transform: scale(1) rotate(180deg); opacity: 1; }
+}
+/* ── 雷フラッシュ ─────────────────── */
+@keyframes lightning-flash {
+  0%,100% { opacity: 0; }
+  4%,8%   { opacity: 0.15; }
+  6%      { opacity: 0; }
+}
+/* ── 雲 ──────────────────────────── */
+@keyframes cloud-drift {
+  0%   { transform: translateX(-200px); opacity: 0; }
+  10%  { opacity: 0.12; }
+  90%  { opacity: 0.12; }
+  100% { transform: translateX(110vw); opacity: 0; }
+}
+/* ── 桜の花びら（常時） ────────────── */
+@keyframes petal-fall {
+  0%   { transform: translateY(-60px) rotate(0deg) translateX(0); opacity: 0; }
+  8%   { opacity: 0.75; }
+  40%  { transform: translateY(40vh) rotate(160deg) translateX(35px); }
+  60%  { transform: translateY(60vh) rotate(260deg) translateX(-15px); }
+  92%  { opacity: 0.75; }
+  100% { transform: translateY(108vh) rotate(400deg) translateX(20px); opacity: 0; }
+}
+/* ── スライド入場アニメーション ─────── */
+@keyframes slide-in-left {
+  from { transform: translateX(-70px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes slide-in-bottom {
+  from { transform: translateY(50px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+@keyframes zoom-in {
+  from { transform: scale(0.88); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+@keyframes fade-up {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes char-in {
+  from { transform: translateY(12px) scaleY(0.6); opacity: 0; }
+  to   { transform: translateY(0)    scaleY(1);   opacity: 1; }
+}
+/* ── プログレスバー ──────────────── */
+@keyframes progress-fill {
+  from { width: 0%; }
+  to   { width: 100%; }
+}
