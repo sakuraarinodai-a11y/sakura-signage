@@ -80,3 +80,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
   from { width: 0%; }
   to   { width: 100%; }
 }
+/* ── 口コミ長文スクロール ────────── */
+@keyframes review-scroll {
+  0%   { transform: translateY(0); }
+  15%  { transform: translateY(0); }
+  85%  { transform: translateY(-40%); }
+  100% { transform: translateY(-40%); }
+}

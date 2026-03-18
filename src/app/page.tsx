@@ -364,6 +364,7 @@ interface Slide {
   accent: string;
   type: 'hook' | 'fact' | 'tip' | 'testimonial' | 'stretch' | 'campaign' | 'menu' | 'qr' | 'service';
   data: Record<string, unknown>;
+  duration?: number; // ミリ秒（省略時は SLIDE_MS）
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -499,6 +500,9 @@ function buildSlides(weather: WeatherState, reviewsState?: ReviewsState, dailyCo
   }
 
   // ── 5. お客様の声（Google口コミ優先、なければ手動データ） ──
+  // テキスト長に応じて表示時間を算出（100字ごとに4秒追加、最大25秒）
+  const reviewDuration = (text: string) => Math.min(25000, 12000 + Math.floor(text.length / 100) * 4000);
+
   const googleReviews = reviewsState?.reviews ?? [];
   if (googleReviews.length > 0) {
     // Google口コミから2枚ランダムに表示
@@ -510,6 +514,7 @@ function buildSlides(weather: WeatherState, reviewsState?: ReviewsState, dailyCo
         gradient: 'linear-gradient(135deg, #0a0800, #201000)',
         accent: '#fdcb6e',
         type: 'testimonial',
+        duration: reviewDuration(r.text),
         data: {
           text: r.text,
           person: anonymize(r.author),
@@ -524,7 +529,8 @@ function buildSlides(weather: WeatherState, reviewsState?: ReviewsState, dailyCo
   } else {
     // フォールバック：手動データ
     const testIdx = Math.floor(rand() * TESTIMONIALS.length);
-    slides.push({ id: 'testimonial', gradient: 'linear-gradient(135deg, #0a0800, #201000)', accent: '#fdcb6e', type: 'testimonial', data: TESTIMONIALS[testIdx] });
+    const t = TESTIMONIALS[testIdx];
+    slides.push({ id: 'testimonial', gradient: 'linear-gradient(135deg, #0a0800, #201000)', accent: '#fdcb6e', type: 'testimonial', duration: reviewDuration(String(t.text ?? '')), data: t });
   }
 
   // ── 6. ストレッチ（1枚） ─────────────────────────────────────
@@ -720,9 +726,15 @@ function SlideContent({ slide }: { slide: Slide }) {
   if (slide.type === 'testimonial') {
     const d = slide.data as { text: string; person: string; tag: string; isGoogle?: boolean; time?: string; overallRating?: number; totalReviews?: number };
     const stars = d.isGoogle ? d.tag : '⭐⭐⭐⭐⭐';
+    const len = (d.text ?? '').length;
+    // 文字数に応じてフォントサイズを調整（長いほど小さく）
+    const textFontSize = len < 80 ? 52 : len < 150 ? 44 : len < 250 ? 38 : 32;
+    // 長文（180字超）は自動スクロール。スクロール量はフォントサイズと行数から推定
+    const needsScroll = len > 180;
+    const scrollDuration = slide.duration ?? 15000;
     return (
       <div style={{ maxWidth: '1300px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '36px', ...base('0s', 'fade-up') }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '28px', ...base('0s', 'fade-up') }}>
           {d.isGoogle && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '100px', padding: '10px 28px' }}>
               <span style={{ fontSize: '32px' }}>G</span>
@@ -734,7 +746,7 @@ function SlideContent({ slide }: { slide: Slide }) {
           </div>
         </div>
         {d.isGoogle && d.overallRating && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '28px', ...base('0.08s', 'fade-up') }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', ...base('0.08s', 'fade-up') }}>
             <span style={{ color: '#fdcb6e', fontSize: '72px', fontWeight: 900 }}>{d.overallRating}</span>
             <div>
               <div style={{ color: '#fdcb6e', fontSize: '36px' }}>{'★'.repeat(Math.round(d.overallRating))}</div>
@@ -742,10 +754,12 @@ function SlideContent({ slide }: { slide: Slide }) {
             </div>
           </div>
         )}
-        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '24px', padding: '48px 56px', borderLeft: `5px solid ${slide.accent}`, ...base('0.14s', 'slide-in-bottom') }}>
-          <p style={{ color: 'white', fontSize: '50px', fontWeight: 600, lineHeight: 1.75, marginBottom: '32px' }}>「{d.text}」</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '32px' }}>
+        <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '24px', padding: '40px 56px', borderLeft: `5px solid ${slide.accent}`, overflow: 'hidden', maxHeight: needsScroll ? '420px' : 'none', ...base('0.14s', 'slide-in-bottom') }}>
+          <div style={needsScroll ? {
+            animation: `review-scroll ${scrollDuration * 0.75}ms ease-in-out ${scrollDuration * 0.1}ms both`,
+          } : {}}>
+            <p style={{ color: 'white', fontSize: `${textFontSize}px`, fontWeight: 600, lineHeight: 1.8, marginBottom: '28px', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>「{d.text}」</p>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '30px' }}>
               {d.person}{d.time ? `　${d.time}` : ''}
             </div>
           </div>
@@ -986,12 +1000,24 @@ export default function SignagePage() {
 
   useEffect(() => {
     if (!slides.length) return;
-    const t = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => { setIdx(p => (p + 1) % slides.length); setVisible(true); setProgressKey(k => k + 1); }, 700);
-    }, SLIDE_MS);
-    return () => clearInterval(t);
-  }, [slides.length]);
+    let timer: ReturnType<typeof setTimeout>;
+    const scheduleNext = (currentIdx: number) => {
+      const dur = slides[currentIdx]?.duration ?? SLIDE_MS;
+      timer = setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => {
+          const next = (currentIdx + 1) % slides.length;
+          setIdx(next);
+          setVisible(true);
+          setProgressKey(k => k + 1);
+          scheduleNext(next);
+        }, 700);
+      }, dur);
+    };
+    scheduleNext(idx);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slides]);
 
   const wtype = useMemo(() => weather.loaded ? getWeatherType(weather.code, weather.temp) : 'clear', [weather]);
 
@@ -1048,7 +1074,7 @@ export default function SignagePage() {
 
       {/* プログレスバー */}
       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: 'rgba(255,255,255,0.1)', zIndex: 10 }}>
-        <div key={progressKey} style={{ height: '100%', background: slide.accent, animation: `progress-fill ${SLIDE_MS}ms linear both`, boxShadow: `0 0 8px ${slide.accent}` }} />
+        <div key={progressKey} style={{ height: '100%', background: slide.accent, animation: `progress-fill ${slide.duration ?? SLIDE_MS}ms linear both`, boxShadow: `0 0 8px ${slide.accent}` }} />
       </div>
 
       {/* トップバー */}
